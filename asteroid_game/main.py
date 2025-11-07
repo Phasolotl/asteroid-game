@@ -1,12 +1,14 @@
 # Asteroid Game 101
 
+import sys
+import time as t
 import pygame as pg
 from pygame import *
 
 from asteroid_field import AsteroidField
 from asteroid import Asteroid
 from constants import *
-from logger import log_state
+from logger import log_state, log_event
 from player import Player
 
 
@@ -44,6 +46,13 @@ def main():
                 return
 
         updatable.update(dt)
+
+        for ast in asteroids:
+            if ast.collision(player):
+                log_event("player_hit")
+                print("Game over!")
+                t.sleep(1)
+                sys.exit()
 
         screen.fill((0,0,0))
 
