@@ -1,6 +1,7 @@
 import pygame as pg
+
 from circleshape import CircleShape
-from constants import PLAYER_RADIUS, PLAYER_TURN_SPEED, PLAYER_SPEED
+from constants import PLAYER_RADIUS, PLAYER_TURN_SPEED, PLAYER_SPEED, PLAYER_SHOOT_SPEED, SHOT_RADIUS
 
 
 class Player(CircleShape):
@@ -34,6 +35,28 @@ class Player(CircleShape):
         if keys[pg.K_s]:
             self.move(-dt)
 
+        if keys[pg.K_SPACE]:
+            self.shoot()
+
     def move(self, dt):
         forward = pg.Vector2(0, 1).rotate(self.rotation)
         self.position += forward * PLAYER_SPEED * dt
+
+    def shoot(self):
+        shot = Shot(self.position.copy(), self.velocity)
+
+        distance = pg.Vector2(0,1).rotate(self.rotation)
+        shot.velocity = distance * PLAYER_SHOOT_SPEED
+
+
+class Shot(CircleShape):
+    def __init__(self, x, y):
+        super().__init__(x, y, SHOT_RADIUS)
+        self.position = pg.Vector2(x, 0)
+        self.radius = SHOT_RADIUS
+
+    def draw(self, screen):
+        pg.draw.circle(screen, "white", self.position, self.radius, 2)
+
+    def update(self, dt):
+        self.position += self.velocity * dt

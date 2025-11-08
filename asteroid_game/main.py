@@ -9,7 +9,7 @@ from asteroid_field import AsteroidField
 from asteroid import Asteroid
 from constants import *
 from logger import log_state, log_event
-from player import Player
+from player import Player, Shot
 
 
 def main():
@@ -22,10 +22,12 @@ def main():
     updatable = pg.sprite.Group()
     drawable = pg.sprite.Group()
     asteroids = pg.sprite.Group()
+    shots = pg.sprite.Group()
 
     Player.containers = (updatable, drawable)
     Asteroid.containers = (asteroids, updatable, drawable)
     AsteroidField.containers = updatable
+    Shot.containers = (updatable, shots)
 
     # Asteroid Field
 
@@ -55,6 +57,9 @@ def main():
                 sys.exit()
 
         screen.fill((0,0,0))
+
+        for bullet in shots:
+            bullet.draw(screen)
 
         for obj in drawable:
             obj.draw(screen)
