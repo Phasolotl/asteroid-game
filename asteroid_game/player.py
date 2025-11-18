@@ -40,6 +40,10 @@ class Player(CircleShape):
         if keys[pg.K_SPACE]:
             self.shoot()
 
+        screen_rect = pg.display.get_surface().get_rect()
+        r = getattr(self, "radius", 0)
+        self.position.x = max(screen_rect.left + r, min(self.position.x, screen_rect.right - r))
+        self.position.y = max(screen_rect.top + r, min(self.position.y, screen_rect.bottom - r))
 
     def move(self, dt):
         forward = pg.Vector2(0, 1).rotate(self.rotation)

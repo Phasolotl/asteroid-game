@@ -1,3 +1,5 @@
+import pygame as pg
+
 SCREEN_WIDTH = 1280
 SCREEN_HEIGHT = 720
 
@@ -13,3 +15,12 @@ PLAYER_SHOOT_SPEED = 500
 PLAYER_SHOOT_COOLDOWN = 0.3
 
 SHOT_RADIUS = 5
+
+pg.font.init()
+SCORE_FONT = pg.font.SysFont("Comic Sans MS", 20, True, False)
+MENU_FONT = pg.font.SysFont("Comic Sans MS", 60, True, False)
+START_FONT = pg.font.SysFont("Comic Sans MS", 30, True, False)
+
+MENU = "menu"
+PLAYING = "playing"
+GAME_OVER = "gameover"
