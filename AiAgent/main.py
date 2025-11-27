@@ -1,10 +1,19 @@
-from tabnanny import verbose
-
 from google import genai
 from google.genai import types
-import os
 from dotenv import load_dotenv
+from functions.call_functions import (schematic_files_content,
+                                      schematic_python_file,
+                                      schematic_write_file,
+                                      schematic_files_info)
+
 import sys
+import os
+
+from functions.get_files_content import get_file_content
+from functions.get_files_info import get_files_info
+from functions.write_files import write_file
+from functions.run_python_files import run_python_file
+
 
 def main():
     load_dotenv()
@@ -35,15 +44,110 @@ def main():
 
 
 def generate_content(client, messages, verbose_is_on):
+    system_prompt = """
+You are a helpful AI coding agent.
+
+When a user asks a question or makes a request, make a function call plan. You can perform the following operations:
+
+- List files and directories
+- Read file contents
+- Execute Python files with optional arguments
+- Write or overwrite files
+
+All paths you provide should be relative to the working directory. You do not need to specify the working directory in your function calls as it is automatically injected for security reasons.
+"""
+
+    schema_get_files_info = schematic_files_info()
+    schema_get_file_content = schematic_files_content()
+    schema_write_file = schematic_write_file()
+    schema_run_python_file = schematic_python_file()
+
+    available_functions = types.Tool(
+        function_declarations=[
+            schema_get_files_info,
+            schema_get_file_content,
+            schema_write_file,
+            schema_run_python_file
+        ]
+    )
+
+    config = types.GenerateContentConfig(
+        tools=[available_functions], system_instruction=system_prompt
+    )
+
     response = client.models.generate_content(
         model="gemini-2.0-flash-001",
         contents=messages,
+        config=config,
     )
+
+    if not response.function_calls:
+        print(response.text)
+
+    function_responses = []
+    for function_call_part in response.function_calls:
+        function_call_result = call_function(function_call_part, verbose_is_on)
+
+        if (not function_call_result.parts
+            or not function_call_result.parts[0].function_response):
+            raise Exception("empty function call result")
+
+        if verbose_is_on:
+            print(f"-> {function_call_result.parts[0].function_response.response}")
+
+        function_responses.append(function_call_result.parts[0])
+
+    if not function_responses:
+        raise Exception("no function responses generated, exiting.")
+
     if verbose_is_on:
         print("Prompt tokens:", response.usage_metadata.prompt_token_count)
         print("Response tokens:", response.usage_metadata.candidates_token_count)
-    print("Response:")
-    print(response.text)
+
+
+def call_function(function_call_part, verbose_is_on=False):
+    if verbose_is_on:
+        print(f"Calling function: {function_call_part.name}({function_call_part.args})")
+    else:
+        print(f" - Calling function: {function_call_part.name}")
+
+    functions_by_name = {
+        "get_file_content": get_file_content,
+        "get_files_info": get_files_info,
+        "write_file": write_file,
+        "run_python_file": run_python_file,
+    }
+
+    function_name = function_call_part.name
+    chosen_function = functions_by_name.get(function_name)
+
+    kwargs = function_call_part.args.copy()
+    kwargs["working_directory"] = "./calculator"
+
+
+    if not chosen_function:
+        return types.Content(
+            role="tool",
+            parts=[
+                types.Part.from_function_response(
+                    name=function_name,
+                    response={"error": f"Unknown function: {function_name}"},
+                )
+            ],
+        )
+
+    result = chosen_function(**kwargs)
+
+    return types.Content(
+        role="tool",
+    parts=[
+        types.Part.from_function_response(
+            name=function_name,
+            response={"result": result},
+        )
+    ],
+)
+
 
 if __name__ == "__main__":
     main()

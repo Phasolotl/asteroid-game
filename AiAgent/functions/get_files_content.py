@@ -2,6 +2,7 @@ import os
 from functions.config import MAX_CHAR
 
 
+
 def get_file_content(working_directory, file_path):
     try:
         full_path = os.path.join(working_directory, file_path)
